@@ -4,7 +4,9 @@ build:
   stage: build
   before_script: 
     - cp $(pwd)/* /home/ros/src/ -Rf
+    - apt-get update ; apt-get install --fix-missing
   script: 
+    
     - cd /home/ros/ ; source "/opt/ros/kinetic/setup.bash"
-    - rosdep install -y --from-paths src --ignore-src --rosdistro $ROS_DISTRO
+    - rosdep update ; rosdep install -y --from-paths src --ignore-src --rosdistro $ROS_DISTRO
     - catkin_make
