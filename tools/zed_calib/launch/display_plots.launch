@@ -19,5 +19,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 <launch>
     <group ns="zed">
         <node name="zed_calib_multiplot" pkg="rqt_multiplot" type="rqt_multiplot" args="--multiplot-config $(find zed_calib)/param/rqt_multiplot.xml --multiplot-run-all" output="screen" />
+        <node name="rqt_reconfigure" pkg="rqt_reconfigure" type="rqt_reconfigure" output="screen" />
     </group>
 </launch>

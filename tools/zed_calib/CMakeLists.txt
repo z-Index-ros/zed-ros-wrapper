@@ -57,10 +57,6 @@ add_message_files( FILES
     calib_stamped.msg
 )
 
-add_service_files( FILES
-    reset_means.srv
-)
-
 generate_messages(
   DEPENDENCIES
   std_msgs
