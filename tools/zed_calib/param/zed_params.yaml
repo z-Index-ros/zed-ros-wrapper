@@ -2,7 +2,7 @@
 # Common parameters to Stereolabs ZED and ZED mini cameras
 ---
 
-resolution:     1       # '0': RESOLUTION_HD2K, '1': RESOLUTION_HD1080, '2': RESOLUTION_HD720, '3': RESOLUTION_VGA
+resolution:     2       # '0': RESOLUTION_HD2K, '1': RESOLUTION_HD1080, '2': RESOLUTION_HD720, '3': RESOLUTION_VGA
 
 # RESOLUTION_HD2K   -> 2208*1242, available framerates: 15 fps.
 # RESOLUTION_HD1080 -> 1920*1080, available framerates: 15, 30 fps.
@@ -11,3 +11,9 @@ resolution:     1       # '0': RESOLUTION_HD2K, '1': RESOLUTION_HD1080, '2': RES
 framerate:      15
 
 camera_flip:    false
+
+des_roll:       0.0     # Desired roll value (used as reference value in Multiplot GUI) - Dynamic
+des_pitch:      0.0     # Desired pitch value (used as reference value in Multiplot GUI) - Dynamic
+des_height:     0.0     # Desired height value (used as reference value in Multiplot GUI) - Dynamic
+
+mean_win_size:  3      # Number of values used to calculate the mobile window average of the data - Dynamic

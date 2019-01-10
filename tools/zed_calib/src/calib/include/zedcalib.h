@@ -21,11 +21,14 @@
 
 #include <ros/ros.h>
 #include <ros/timer.h>
-#include <sensor_msgs/Imu.h>
+#include <dynamic_reconfigure/server.h>
+#include "zed_calib/zed_calibConfig.h"
 
 #include "zed_calib/calib_stamped.h"
 
 #include "sl/Camera.hpp"
+
+#include "csmartmean.h"
 
 namespace zed_calib {
 
@@ -40,6 +43,9 @@ namespace zed_calib {
       protected:
         // Data acquisition timer callback
         void timerCallback(const ros::TimerEvent& e);
+
+        // Callback to handle dynamic reconfigure events in ROS
+        void dynamicReconfCallback(zed_calib::zed_calibConfig& cfg, uint32_t level);
 
       private:
         // Node Handles
@@ -57,8 +63,14 @@ namespace zed_calib {
         sl::RESOLUTION mCamRes = sl::RESOLUTION_HD720;
         bool mCamFlip = false;
 
+        // Dynamic reconfigure
+        boost::shared_ptr<dynamic_reconfigure::Server<zed_calib::zed_calibConfig>> mDynRecServer;
+
         // Dynamic parameters
         int mMeanWinSize = 30;
+        double mDesRoll = 0.0;
+        double mDesPitch = 0.0;
+        double mDesHeight = 0.0;
 
         // ZED Camera
         sl::Camera mZed;
@@ -68,6 +80,11 @@ namespace zed_calib {
 
         // Message
         zed_calib::calib_stampedPtr mCalibMsgPtr;
+
+        // Mean values
+        CSmartMean mMeanRoll;
+        CSmartMean mMeanPitch;
+        CSmartMean mMeanHeight;
     };
 
 } // namespace zed_calib

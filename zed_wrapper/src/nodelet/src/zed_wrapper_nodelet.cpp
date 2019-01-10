@@ -1070,7 +1070,7 @@ namespace zed_wrapper {
         // https://github.com/ros/common_msgs/blob/jade-devel/sensor_msgs/include/sensor_msgs/point_cloud2_iterator.h
 
         int ptsCount = mMatWidth * mMatHeight;
-      
+
         mPointcloudMsg->header.stamp = mPointCloudTime;
 
         if (mPointcloudMsg->width != mMatWidth || mPointcloudMsg->height != mMatHeight) {
@@ -1631,7 +1631,7 @@ namespace zed_wrapper {
                             poseSubnumber + poseCovSubnumber + odomSubnumber + confImgSubnumber +
                             confMapSubnumber /*+ imuSubnumber + imuRawsubnumber*/ + pathSubNumber) > 0);
 
-            runParams.enable_point_cloud = false;
+            runParams.enable_point_cloud = false; // TODO deprecated, to be removed
 
             if (cloudSubnumber > 0) {
                 runParams.enable_point_cloud = true;

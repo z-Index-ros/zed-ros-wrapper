@@ -19,7 +19,7 @@ function(checkPackage package customMessage)
     endif()
 endfunction(checkPackage)
 
-find_package(ZED 2.3)
+find_package(ZED 2.7)
 checkPackage("ZED" "ZED SDK not found, install it from:\n https://www.stereolabs.com/developers/")
 
 exec_program(uname ARGS -p OUTPUT_VARIABLE CMAKE_SYSTEM_NAME2)
@@ -44,6 +44,7 @@ find_package(catkin COMPONENTS
   std_msgs
   dynamic_reconfigure
   message_generation  
+  tf2
 )
 
 checkPackage("roscpp" "")
@@ -76,6 +77,7 @@ catkin_package(
     std_msgs
     dynamic_reconfigure       
     message_runtime
+    tf2
 )
 
 ###############################################################################
@@ -83,6 +85,7 @@ catkin_package(
 
 set(NODE_SRC ${CMAKE_CURRENT_SOURCE_DIR}/src/zed_calib_node.cpp
              ${CMAKE_CURRENT_SOURCE_DIR}/src/calib/src/zedcalib.cpp
+             ${CMAKE_CURRENT_SOURCE_DIR}/src/calib/src/csmartmean.cpp
 )
 
 ###############################################################################

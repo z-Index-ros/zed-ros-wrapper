@@ -18,6 +18,7 @@
   <depend>rosconsole</depend>
   <depend>std_msgs</depend>
   <depend>dynamic_reconfigure</depend>
+  <depend>tf2</depend>
   
   <build_depend>message_generation</build_depend>
 
