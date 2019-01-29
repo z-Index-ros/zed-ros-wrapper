@@ -23,7 +23,6 @@
 
 #include <tf2/LinearMath/Transform.h>
 
-#include "zed_calib/reset_means.h"
 #include "zed_calib/zed_calibConfig.h"
 
 namespace zed_calib {
@@ -95,7 +94,7 @@ namespace zed_calib {
         mZedParams.camera_resolution = mCamRes;
         mZedParams.coordinate_system = sl::COORDINATE_SYSTEM_RIGHT_HANDED_Z_UP_X_FWD;
         mZedParams.coordinate_units = sl::UNIT_METER;
-        mZedParams.depth_mode = sl::DEPTH_MODE_ULTRA;
+        mZedParams.depth_mode = sl::DEPTH_MODE_PERFORMANCE;
         mZedParams.sdk_verbose = true;
 
         // Camera opening
@@ -103,12 +102,15 @@ namespace zed_calib {
 
         int errorCount = 0;
 
-        while (connStatus != sl::SUCCESS) {
+        while (1) {
             connStatus = mZed.open(mZedParams);
             ROS_INFO_STREAM(toString(connStatus));
-            std::this_thread::sleep_for(std::chrono::milliseconds(2000));
 
-            if (++errorCount >= 15) {
+            if (connStatus == sl::SUCCESS) {
+                break;
+            }
+
+            if (++errorCount >= 30) {
                 ROS_ERROR("Cannot connect to a ZED camera");
                 return false;
             }
@@ -118,9 +120,14 @@ namespace zed_calib {
                 mZed.close();
                 return false;
             }
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         }
 
         sl::CameraInformation camInfo = mZed.getCameraInformation();
+
+        // Enable tracking
+        mZed.enableTracking();
 
         ROS_INFO_STREAM(sl::toString(camInfo.camera_model).c_str() << " connected");
         ROS_INFO_STREAM("Serial number: " << camInfo.serial_number);
@@ -157,7 +164,10 @@ namespace zed_calib {
         sl::ERROR_CODE grabStatus = mZed.grab(runtimeParams);
 
         if (grabStatus != sl::SUCCESS) {
-            ROS_WARN_STREAM("Camera error: " << sl::toString(grabStatus));
+            if (grabStatus != sl::ERROR_CODE_NOT_A_NEW_FRAME) {
+                ROS_WARN_STREAM("Camera error: " << sl::toString(grabStatus));
+            }
+
             return;    // TODO handle camera errors!!!
         }
 
@@ -187,24 +197,25 @@ namespace zed_calib {
         // Floor Height
         sl::Plane floorPlane;
         sl::Transform cameraTransform;
-        sl::ERROR_CODE floorErr = mZed.findFloorPlane(floorPlane, cameraTransform);
 
         bool floorDetected = false;
+        sl::ERROR_CODE floorErr = mZed.findFloorPlane(floorPlane, cameraTransform);
 
         if (floorErr == sl::SUCCESS) {
 
             // Roll & Pitch from floor plane
+
+            double floorRoll, floorPitch, floorYaw;
+            sl::Orientation quat = cameraTransform.getOrientation();
+            tf2::Matrix3x3(tf2::Quaternion(quat.ox, quat.oy, quat.oz, quat.ow)).getRPY(floorRoll, floorPitch, floorYaw);
+
+            roll = floorRoll * RAD2DEG;
+            pitch = floorPitch * RAD2DEG;
+
+            ROS_DEBUG("FLOOR - Roll: %.2f - Pitch: %.2f", roll,
+                      pitch); // NOTE:  This is valid only when the v2.8 code will be updated by Pierre
+
             if (camInfo.camera_model == sl::MODEL_ZED) {
-                double floorRoll, floorPitch, floorYaw;
-                sl::Orientation quat = cameraTransform.getOrientation();
-                tf2::Matrix3x3(tf2::Quaternion(quat.ox, quat.oy, quat.oz, quat.ow)).getRPY(floorRoll, floorPitch, floorYaw);
-
-                roll = floorRoll * RAD2DEG;
-                pitch = floorPitch * RAD2DEG;
-
-                ROS_DEBUG("FLOOR - Roll: %.2f - Pitch: %.2f", roll,
-                          pitch); // NOTE:  This is valid only when the v2.8 code will be updated by Pierre
-
                 // Mean update
                 mMeanRoll.addValue(roll);
                 mMeanPitch.addValue(pitch);
@@ -219,6 +230,7 @@ namespace zed_calib {
         } else {
             ROS_WARN_STREAM("Floor detection:" << sl::toString(floorErr).c_str());
         }
+
 
         // Message Initialization
         mCalibMsgPtr->header.stamp = ros::Time::now();
