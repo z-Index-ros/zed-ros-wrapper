@@ -17,9 +17,10 @@ geometry_msgs/Point32 position
 geometry_msgs/Vector3 linear_vel
 
 # Tracking state
-# 0 -> OFF (object not valid)
-# 1 -> OK
-# 2 -> SEARCHING (occlusion occurred, trajectory is estimated)
+# 0 -> OFF - The tracking is not yet initialized, the object ID is not usable
+# 1 -> OK - The object is tracked
+# 2 -> SEARCHING - The object couldn't be detected in the image and is potentially occluded, the trajectory is estimated
+# 3 -> TERMINATE - This is the last searching state of the track, the track will be deleted in the next retreiveObject
 int8 tracking_state 
 
 # 2D Bounding box projected to Camera image

@@ -184,6 +184,10 @@ protected:
          */
     void publishPointCloud();
 
+    /* \brief Publish a Lidar pointCloud with a ros Publisher
+         */
+    void publishLidarPointCloud(ros::Time ts);
+
     /* \brief Publish a fused pointCloud with a ros Publisher
          */
     void pubFusedPointCloudCallback(const ros::TimerEvent& e);
@@ -411,6 +415,7 @@ private:
     ros::Publisher mPubConfMap; //
     ros::Publisher mPubDisparity; //
     ros::Publisher mPubCloud;
+    ros::Publisher mPubLidarCloud;
     ros::Publisher mPubFusedCloud;
     ros::Publisher mPubPose;
     ros::Publisher mPubPoseCov;
@@ -621,7 +626,9 @@ private:
 
     // Point cloud variables
     sl::Mat mCloud;
+    sl::Mat mLidarCloud;
     sensor_msgs::PointCloud2Ptr mPointcloudMsg;
+    sensor_msgs::PointCloud2Ptr mPcLidarMsg;
     sl::FusedPointCloud mFusedPC;
     sensor_msgs::PointCloud2Ptr mPointcloudFusedMsg;
     ros::Time mPointCloudTime;

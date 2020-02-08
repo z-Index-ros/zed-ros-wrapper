@@ -119,6 +119,7 @@ void ZEDWrapperNodelet::onInit() {
 
 
     string pointcloud_topic = "point_cloud/cloud_registered";
+    string lidar_pointcloud_topic = "point_cloud/lidar";
 
     string pointcloud_fused_topic = "mapping/fused_cloud";
 
@@ -382,6 +383,9 @@ void ZEDWrapperNodelet::onInit() {
     // PointCloud publishers
     mPubCloud = mNhNs.advertise<sensor_msgs::PointCloud2>(pointcloud_topic, 1);
     NODELET_INFO_STREAM("Advertised on topic " << mPubCloud.getTopic());
+
+    mPubLidarCloud= mNhNs.advertise<sensor_msgs::PointCloud2>(lidar_pointcloud_topic, 1);
+    NODELET_INFO_STREAM("Advertised on topic " << mPubLidarCloud.getTopic());
 
     if (mMappingEnabled) {
         mPubFusedCloud = mNhNs.advertise<sensor_msgs::PointCloud2>(pointcloud_fused_topic, 1);
@@ -1696,6 +1700,48 @@ void ZEDWrapperNodelet::publishPointCloud() {
     mPubCloud.publish(mPointcloudMsg);
 }
 
+void ZEDWrapperNodelet::publishLidarPointCloud(  ros::Time ts ) {
+    if( !mPcLidarMsg ) {
+        mPcLidarMsg = boost::make_shared<sensor_msgs::PointCloud2>();
+    }
+
+    // Initialize Point Cloud message
+    // https://github.com/ros/common_msgs/blob/jade-devel/sensor_msgs/include/sensor_msgs/point_cloud2_iterator.h
+    size_t w = mLidarCloud.getWidth();
+    size_t h = mLidarCloud.getHeight();
+
+    int ptsCount = w*h;
+
+    mPcLidarMsg->header.stamp = ts;
+
+    if (mPcLidarMsg->width != w || mPcLidarMsg->height != h) {
+        mPcLidarMsg->header.frame_id = mDepthFrameId; // Set the header values of the ROS message
+
+        mPcLidarMsg->is_bigendian = false;
+        mPcLidarMsg->is_dense = false;
+
+        mPcLidarMsg->width = w;
+        mPcLidarMsg->height = h;
+
+        sensor_msgs::PointCloud2Modifier modifier(*mPcLidarMsg);
+        modifier.setPointCloud2Fields(4,
+                                      "x", 1, sensor_msgs::PointField::FLOAT32,
+                                      "y", 1, sensor_msgs::PointField::FLOAT32,
+                                      "z", 1, sensor_msgs::PointField::FLOAT32,
+                                      "rgb", 1, sensor_msgs::PointField::FLOAT32);
+    }
+
+    // Data copy
+    sl::Vector4<float>* cpu_cloud = mLidarCloud.getPtr<sl::float4>();
+    float* ptCloudPtr = (float*)(&mPcLidarMsg->data[0]);
+
+    // We can do a direct memcpy since data organization is the same
+    memcpy(ptCloudPtr, (float*)cpu_cloud, 4 * ptsCount * sizeof(float));
+
+    // Pointcloud publishing
+    mPubLidarCloud.publish(mPcLidarMsg);
+}
+
 void ZEDWrapperNodelet::pubFusedPointCloudCallback(const ros::TimerEvent& e) {
     if( !mPointcloudFusedMsg ) {
         mPointcloudFusedMsg = boost::make_shared<sensor_msgs::PointCloud2>();
@@ -2598,6 +2644,7 @@ void ZEDWrapperNodelet::device_poll_thread_func() {
         uint32_t depthSubnumber = mPubDepth.getNumSubscribers();
         uint32_t disparitySubnumber = mPubDisparity.getNumSubscribers();
         uint32_t cloudSubnumber = mPubCloud.getNumSubscribers();
+        uint32_t lidarCloudSubnumber = mPubLidarCloud.getNumSubscribers();
         uint32_t fusedCloudSubnumber = mPubFusedCloud.getNumSubscribers();
         uint32_t poseSubnumber = mPubPose.getNumSubscribers();
         uint32_t poseCovSubnumber = mPubPoseCov.getNumSubscribers();
@@ -2621,7 +2668,7 @@ void ZEDWrapperNodelet::device_poll_thread_func() {
         mGrabActive =  mRecording || mStreaming || mMappingEnabled || mObjDetEnabled || mTrackingActivated ||
                 ((rgbSubnumber + rgbRawSubnumber + leftSubnumber +
                   leftRawSubnumber + rightSubnumber + rightRawSubnumber +
-                  depthSubnumber + disparitySubnumber + cloudSubnumber +
+                  depthSubnumber + disparitySubnumber + cloudSubnumber + lidarCloudSubnumber +
                   poseSubnumber + poseCovSubnumber + odomSubnumber +
                   confMapSubnumber /*+ imuSubnumber + imuRawsubnumber*/ + pathSubNumber +
                   stereoSubNumber + stereoRawSubNumber) > 0);
@@ -2655,7 +2702,7 @@ void ZEDWrapperNodelet::device_poll_thread_func() {
 
             // Detect if one of the subscriber need to have the depth information
             mComputeDepth = mDepthMode != sl::DEPTH_MODE::NONE &&
-                    ((depthSubnumber + disparitySubnumber + cloudSubnumber + fusedCloudSubnumber +
+                    ((depthSubnumber + disparitySubnumber + cloudSubnumber + lidarCloudSubnumber + fusedCloudSubnumber +
                       poseSubnumber + poseCovSubnumber + odomSubnumber + confMapSubnumber) > 0);
 
             if (mComputeDepth) {
@@ -3018,6 +3065,13 @@ void ZEDWrapperNodelet::device_poll_thread_func() {
                 }
             } else {
                 mPcPublishing = false;
+            }
+
+            // Publish the LIDAR point cloud if someone has subscribed to
+            if( lidarCloudSubnumber>0) {
+                mZed.retrieveMeasure( mLidarCloud, sl::MEASURE::SUBSAMPLE_XYZBGRA);
+
+                publishLidarPointCloud( mFrameTimestamp );
             }
             mCamDataMutex.unlock();
 
