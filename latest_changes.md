@@ -1,6 +1,10 @@
 LATEST CHANGES
 ==============
 
+SDK v3.1 (2020-02-)
+-------------------
+- Support for Lidar View (Pointcloud subsampling)
+
 XACRO and more (2020-01-31)
 ---------------------------
 - Added xacro support for parametric URDF 
