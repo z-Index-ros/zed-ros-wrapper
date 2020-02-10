@@ -119,7 +119,10 @@ void ZEDWrapperNodelet::onInit() {
 
 
     string pointcloud_topic = "point_cloud/cloud_registered";
+
+#if (ZED_SDK_MAJOR_VERSION==3 && ZED_SDK_MINOR_VERSION>=1)
     string lidar_pointcloud_topic = "point_cloud/lidar";
+#endif
 
     string pointcloud_fused_topic = "mapping/fused_cloud";
 
@@ -384,8 +387,10 @@ void ZEDWrapperNodelet::onInit() {
     mPubCloud = mNhNs.advertise<sensor_msgs::PointCloud2>(pointcloud_topic, 1);
     NODELET_INFO_STREAM("Advertised on topic " << mPubCloud.getTopic());
 
+#if (ZED_SDK_MAJOR_VERSION==3 && ZED_SDK_MINOR_VERSION>=1)
     mPubLidarCloud= mNhNs.advertise<sensor_msgs::PointCloud2>(lidar_pointcloud_topic, 1);
     NODELET_INFO_STREAM("Advertised on topic " << mPubLidarCloud.getTopic());
+#endif
 
     if (mMappingEnabled) {
         mPubFusedCloud = mNhNs.advertise<sensor_msgs::PointCloud2>(pointcloud_fused_topic, 1);
@@ -1700,6 +1705,7 @@ void ZEDWrapperNodelet::publishPointCloud() {
     mPubCloud.publish(mPointcloudMsg);
 }
 
+#if (ZED_SDK_MAJOR_VERSION==3 && ZED_SDK_MINOR_VERSION>=1)
 void ZEDWrapperNodelet::publishLidarPointCloud(  ros::Time ts ) {
     if( !mPcLidarMsg ) {
         mPcLidarMsg = boost::make_shared<sensor_msgs::PointCloud2>();
@@ -1741,6 +1747,7 @@ void ZEDWrapperNodelet::publishLidarPointCloud(  ros::Time ts ) {
     // Pointcloud publishing
     mPubLidarCloud.publish(mPcLidarMsg);
 }
+#endif
 
 void ZEDWrapperNodelet::pubFusedPointCloudCallback(const ros::TimerEvent& e) {
     if( !mPointcloudFusedMsg ) {
@@ -2644,7 +2651,10 @@ void ZEDWrapperNodelet::device_poll_thread_func() {
         uint32_t depthSubnumber = mPubDepth.getNumSubscribers();
         uint32_t disparitySubnumber = mPubDisparity.getNumSubscribers();
         uint32_t cloudSubnumber = mPubCloud.getNumSubscribers();
-        uint32_t lidarCloudSubnumber = mPubLidarCloud.getNumSubscribers();
+        uint32_t lidarCloudSubnumber = 0;
+#if (ZED_SDK_MAJOR_VERSION==3 && ZED_SDK_MINOR_VERSION>=1)
+        lidarCloudSubnumber = mPubLidarCloud.getNumSubscribers();
+#endif
         uint32_t fusedCloudSubnumber = mPubFusedCloud.getNumSubscribers();
         uint32_t poseSubnumber = mPubPose.getNumSubscribers();
         uint32_t poseCovSubnumber = mPubPoseCov.getNumSubscribers();
@@ -3067,12 +3077,15 @@ void ZEDWrapperNodelet::device_poll_thread_func() {
                 mPcPublishing = false;
             }
 
+#if (ZED_SDK_MAJOR_VERSION==3 && ZED_SDK_MINOR_VERSION>=1)
             // Publish the LIDAR point cloud if someone has subscribed to
             if( lidarCloudSubnumber>0) {
                 mZed.retrieveMeasure( mLidarCloud, sl::MEASURE::SUBSAMPLE_XYZBGRA);
 
                 publishLidarPointCloud( mFrameTimestamp );
             }
+#endif
+
             mCamDataMutex.unlock();
 
             mObjDetMutex.lock();
