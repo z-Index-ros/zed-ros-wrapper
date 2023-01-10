@@ -37,6 +37,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
     <remap from="/zed2i/zed_node/rgb/image_rect_color" to="/camera/color/image_raw" />
     <remap from="/zed2i/zed_node/obj_det/objects" to="/camera/objects_detected" />
+    <remap from="/zed2i/zed_node/depth/depth_registered" to="/camera/depth/image_rect_raw" />
     
     <group ns="$(arg camera_name)">
         <include file="$(find zed_wrapper)/launch/include/zed_camera.launch.xml">
